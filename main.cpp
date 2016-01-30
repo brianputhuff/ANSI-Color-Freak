@@ -8,10 +8,9 @@
 /*
     ANSI COLOR FREAK
     by Brian Puthuff
-
 */
 
-
+// HSV color structure
 struct HSV
 {
     int H;
@@ -19,13 +18,19 @@ struct HSV
     double V;
 };
 
+/* function prototypes */
+
+// get HSV color structure from RGB
 HSV getHSV(Uint8 r, Uint8 g, Uint8 b);
+
+// check if H value is within fixed palette range
 bool isWithinArcBounds(int hue, int index);
 
+/* MAIN */
 int main(int argc, char** argv)
 {
-    std::cout << argv[1];
 
+    // temp window size for preview
     const int SCREEN_WIDTH = 640;
     const int SCREEN_HEIGHT = 640;
 
@@ -36,7 +41,7 @@ int main(int argc, char** argv)
         return 1;
     }
 
-
+    // attempt to load input image
     SDL_Surface* input_image = SDL_LoadBMP(argv[1]);
     if(input_image == NULL)
     {
@@ -78,7 +83,10 @@ int main(int argc, char** argv)
     colors[0xe] = {0x54, 0xff, 0xff, 0xff}; // BRIGHT CYAN
     colors[0xf] = {0xff, 0xff, 0xff, 0xff}; // WHITE
 
+    // pointer to image data
     Uint32* pixels = (Uint32*) optimized_surface->pixels;
+
+    // single pixel value
     Uint32 pixel;
     Uint8 r, g, b;
 
@@ -93,50 +101,53 @@ int main(int argc, char** argv)
             // get pixel HSV
             SDL_GetRGB(pixel, optimized_surface->format, &r, &g, &b);
             HSV pixel_HSV = getHSV(r, g, b);
-            if(pixel_HSV.S <= .25)
-            {
+
+            if(pixel_HSV.S <= .20)
+            { // if saturation is low, determine grays
                 if(pixel_HSV.V >= .75)
-                    pixel = SDL_MapRGB(optimized_surface->format, colors[0xf].r, colors[0xf].g, colors[0xf].b);
+                    pixel = SDL_MapRGB(optimized_surface->format, colors[0xf].r, colors[0xf].g, colors[0xf].b); // WHITE
                 else if(pixel_HSV.V >= .50)
-                    pixel = SDL_MapRGB(optimized_surface->format, colors[0x7].r, colors[0x7].g, colors[0x7].b);
+                    pixel = SDL_MapRGB(optimized_surface->format, colors[0x7].r, colors[0x7].g, colors[0x7].b); // LT GRAY
                 else if(pixel_HSV.V >= .25)
-                    pixel = SDL_MapRGB(optimized_surface->format, colors[0x8].r, colors[0x8].g, colors[0x8].b);
+                    pixel = SDL_MapRGB(optimized_surface->format, colors[0x8].r, colors[0x8].g, colors[0x8].b); // DK GRAY
                 else
-                    pixel = SDL_MapRGB(optimized_surface->format, colors[0x0].r, colors[0x0].g, colors[0x0].b);
+                    pixel = SDL_MapRGB(optimized_surface->format, colors[0x0].r, colors[0x0].g, colors[0x0].b); // BLACK
             }
             else
-            {
-                int i = 0x9;
+            { // enough saturation to determine color
+                int i = 0x9; // iterator (from 9 to 14)
                 while(i < 0xf)
                 {
                     if(isWithinArcBounds(pixel_HSV.H, i))
-                    {
-                        if(pixel_HSV.V >= .60)
-                            pixel = SDL_MapRGB(optimized_surface->format, colors[i].r, colors[i].g, colors[i].b);
-                        else if(pixel_HSV.V >= .20)
-                            pixel = SDL_MapRGB(optimized_surface->format, colors[i - 8].r, colors[i - 8].g, colors[i - 8].b);
+                    { // consider value for either light, normal/dark, or black-fill
+                        if(pixel_HSV.V >= .75)
+                            pixel = SDL_MapRGB(optimized_surface->format, colors[i].r, colors[i].g, colors[i].b); // LIGHT
+                        else if(pixel_HSV.V >= .25)
+                            pixel = SDL_MapRGB(optimized_surface->format, colors[i - 8].r, colors[i - 8].g, colors[i - 8].b); // DARK
                         else
-                            pixel = SDL_MapRGB(optimized_surface->format, colors[0x0].r, colors[0x0].g, colors[0x0].b);
+                            pixel = SDL_MapRGB(optimized_surface->format, colors[0x0].r, colors[0x0].g, colors[0x0].b); // BLACK
                         i = 0xf;
                     }
                     else
                         i++;
                 }
             }
-
+            // repaint pixel
             pixels[row * optimized_surface->w + col] = pixel;
         }
     }
 
-
+    // render sample image to window
     SDL_BlitSurface(optimized_surface, NULL, render_Surface, NULL);
     SDL_UpdateWindowSurface(window);
     SDL_Delay(5000);
 
+    // build output filename
     std::string filename = argv[1];
     filename.erase(filename.end()-4, filename.end());
     filename.append("_ACF.bmp");
 
+    // save output file
     SDL_SaveBMP(optimized_surface, filename.c_str());
 
     // bye
@@ -184,27 +195,27 @@ bool isWithinArcBounds(int hue, int index)
     switch(index)
     {
         case 0x9: // RED < 60 and  >
-                if(hue <= 30 || hue > 330)
+                if(hue < 45 || hue >= 315)
                     return true;
             break;
         case 0xa: // GREEN
-                if(hue > 90 && hue <= 150)
+                if(hue >=75 && hue < 165)
                     return true;
             break;
         case 0xb: // YELLOW
-                if(hue > 30 && hue <= 90)
+                if(hue >= 45 && hue < 75)
                     return true;
             break;
         case 0xc: // BLUE
-                if(hue > 210 && hue <= 270)
+                if(hue >= 195 && hue < 285)
                     return true;
             break;
         case 0xd: // MAGENTA
-                if(hue > 270 && hue <= 330)
+                if(hue >= 285 && hue < 315)
                     return true;
             break;
         case 0xe: // CYAN
-                if(hue > 150 && hue <= 210)
+                if(hue >= 165 && hue < 195)
                     return true;
             break;
         default:
