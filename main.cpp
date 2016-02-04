@@ -10,6 +10,8 @@
     by Brian Puthuff
 */
 
+enum { red, red_yellow, yellow, yellow_green, green, green_cyan, cyan, cyan_blue, blue, blue_magenta, magenta, magenta_red, mystery };
+
 // HSV color structure
 struct HSV
 {
@@ -24,7 +26,11 @@ struct HSV
 HSV getHSV(Uint8 r, Uint8 g, Uint8 b);
 
 // check if H value is within fixed palette range
-bool isWithinArcBounds(int hue, int index);
+int dropHueRange(int hue);
+int getDeltaXY(const SDL_Point* pixel_pair, const SDL_Point* opt1_pair, const SDL_Point* opt2_pair);
+
+// check if H value is within fixed palette range
+//bool isWithinArcBounds(int hue, int index);
 
 /* MAIN */
 int main(int argc, char** argv)
@@ -104,33 +110,124 @@ int main(int argc, char** argv)
 
             if(pixel_HSV.S <= .20)
             { // if saturation is low, determine grays
-                if(pixel_HSV.V >= .75)
+
+                if(pixel_HSV.V >= .90)
                     pixel = SDL_MapRGB(optimized_surface->format, colors[0xf].r, colors[0xf].g, colors[0xf].b); // WHITE
-                else if(pixel_HSV.V >= .50)
+                else if(pixel_HSV.V >= .52)
                     pixel = SDL_MapRGB(optimized_surface->format, colors[0x7].r, colors[0x7].g, colors[0x7].b); // LT GRAY
-                else if(pixel_HSV.V >= .25)
+                else if(pixel_HSV.V >= .15)
                     pixel = SDL_MapRGB(optimized_surface->format, colors[0x8].r, colors[0x8].g, colors[0x8].b); // DK GRAY
                 else
                     pixel = SDL_MapRGB(optimized_surface->format, colors[0x0].r, colors[0x0].g, colors[0x0].b); // BLACK
             }
             else
             { // enough saturation to determine color
-                int i = 0x9; // iterator (from 9 to 14)
-                while(i < 0xf)
+                int selected_index = 0;
+                int drop = dropHueRange(pixel_HSV.H);
+                SDL_Point c;
+                SDL_Point o1;
+                SDL_Point o2;
+                switch(drop)
                 {
-                    if(isWithinArcBounds(pixel_HSV.H, i))
-                    { // consider value for either light, normal/dark, or black-fill
-                        if(pixel_HSV.V >= .75)
-                            pixel = SDL_MapRGB(optimized_surface->format, colors[i].r, colors[i].g, colors[i].b); // LIGHT
-                        else if(pixel_HSV.V >= .25)
-                            pixel = SDL_MapRGB(optimized_surface->format, colors[i - 8].r, colors[i - 8].g, colors[i - 8].b); // DARK
+                    case red:
+                        selected_index = 0x9; // RED
+                        break;
+
+                    case red_yellow:
+                        c = {r, g};
+                        o1 = {colors[0x9].r, colors[0x9].g}; // RED
+                        o2 = {colors[0xb].r, colors[0xb].g}; // YELLOW
+                        if(getDeltaXY(&c, &o1, &o2) == 0)
+                            selected_index = 0x9; // RED
                         else
-                            pixel = SDL_MapRGB(optimized_surface->format, colors[0x0].r, colors[0x0].g, colors[0x0].b); // BLACK
-                        i = 0xf;
-                    }
-                    else
-                        i++;
+                            selected_index = 0xb; // YELLOW
+                        break;
+
+                    case yellow:
+                        selected_index = 0xb; // YELLOW
+                        break;
+
+                    case yellow_green:
+                        c = {r, g};
+                        o1 = {colors[0xb].r, colors[0xb].g}; // YELLOW
+                        o2 = {colors[0xa].r, colors[0xa].g}; // GREEN
+                        if(getDeltaXY(&c, &o1, &o2) == 0)
+                            selected_index = 0xb; // YELLOW
+                        else
+                            selected_index = 0xa; // GREEN
+                        break;
+
+                    case green:
+                        selected_index = 0xa; // GREEN
+                        break;
+
+                    case green_cyan:
+                        c = {g, b};
+                        o1 = {colors[0xa].g, colors[0xa].b}; // GREEN
+                        o2 = {colors[0xe].g, colors[0xe].b}; // CYAN
+                        if(getDeltaXY(&c, &o1, &o2) == 0)
+                            selected_index = 0xa; // GREEN
+                        else
+                            selected_index = 0xe; // CYAN
+                        break;
+
+                    case cyan:
+                        selected_index = 0xe; // CYAN
+                        break;
+
+                    case cyan_blue:
+                        c = {g, b};
+                        o1 = {colors[0xe].g, colors[0xe].b}; // CYAN
+                        o2 = {colors[0xc].g, colors[0xc].b}; // BLUE
+                        if(getDeltaXY(&c, &o1, &o2) == 0)
+                            selected_index = 0xe; // CYAN
+                        else
+                            selected_index = 0xc; // BLUE
+                        break;
+
+                    case blue:
+                        selected_index = 0xc; // BLUE
+                        break;
+
+                    case blue_magenta:
+                        c = {b, r};
+                        o1 = {colors[0xc].b, colors[0xc].r}; // BLUE
+                        o2 = {colors[0xd].b, colors[0xd].r}; // MAGENTA
+                        if(getDeltaXY(&c, &o1, &o2) == 0)
+                            selected_index = 0xc; // BLUE
+                        else
+                            selected_index = 0xd; // MAGENTA
+                        break;
+
+                    case magenta:
+                        selected_index = 0xd; // MAGENTA
+                        break;
+
+                    case magenta_red:
+                        c = {b, r};
+                        o1 = {colors[0xd].b, colors[0xd].r}; // MAGENTA
+                        o2 = {colors[0x9].b, colors[0x9].r}; // RED
+                        if(getDeltaXY(&c, &o1, &o2) == 0)
+                            selected_index = 0xd; // MAGENTA
+                        else
+                            selected_index = 0x9; // RED
+                        break;
+
+                    case mystery:
+                    default:
+                        selected_index = 0x0; // BLACK
+                        break;
                 }
+
+                HSV selected_HSV = getHSV(colors[selected_index - 8].r, colors[selected_index - 8].g, colors[selected_index - 8].b);
+                if(pixel_HSV.V <= selected_HSV.V)
+                {
+                    if(pixel_HSV.V < .15)
+                        selected_index = 0x0;
+                    else
+                       selected_index -= 8;
+                }
+                pixel = SDL_MapRGB(optimized_surface->format, colors[selected_index].r, colors[selected_index].g, colors[selected_index].b);
             }
             // repaint pixel
             pixels[row * optimized_surface->w + col] = pixel;
@@ -190,6 +287,46 @@ HSV getHSV(Uint8 r, Uint8 g, Uint8 b)
     return r_HSV;
 }
 
+int dropHueRange(int hue)
+{
+	if(hue < 15 || hue >= 345)
+		return red;
+	else if(hue < 45)
+		return red_yellow;
+	else if(hue < 75)
+		return yellow;
+	else if(hue < 105)
+		return yellow_green;
+	else if(hue < 135)
+		return green;
+	else if(hue < 165)
+		return green_cyan;
+	else if(hue < 195)
+		return cyan;
+	else if(hue < 225)
+		return cyan_blue;
+	else if(hue < 255)
+		return blue;
+	else if(hue < 285)
+		return blue_magenta;
+	else if(hue < 315)
+		return magenta;
+	else if(hue < 345)
+		return magenta_red;
+	else
+		return mystery;
+}
+
+int getDeltaXY(const SDL_Point* pixel_pair, const SDL_Point* opt1_pair, const SDL_Point* opt2_pair)
+{
+    double delta_1, delta_2;
+    delta_1 = sqrt(pow(pixel_pair->x - opt1_pair->x, 2) + pow(pixel_pair->y - opt1_pair->y, 2));
+    delta_2 = sqrt(pow(pixel_pair->x - opt2_pair->x, 2) + pow(pixel_pair->y - opt2_pair->y, 2));
+    if(delta_1 < delta_2)
+        return 0;
+    return 1;
+}
+/*
 bool isWithinArcBounds(int hue, int index)
 {
     switch(index)
@@ -223,3 +360,4 @@ bool isWithinArcBounds(int hue, int index)
     }
     return false;
 }
+*/
