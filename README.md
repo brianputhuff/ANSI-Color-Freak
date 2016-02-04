@@ -7,9 +7,8 @@ The program will accept a command line argument that is the name of a .BMP forma
 
 The program currently opens a small sample view window but functionality for this feature has not been completed yet. There's clearly more work to be done...
 
+## TO-DO:
 * Either remove sample display window, or scale sample to fit.
 * Provide a makefile.
-* More fine tuning on the HUE ranges.
-* ???
 
 Please note that this program requires [SDL](http://libsdl.org) framework.

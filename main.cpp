@@ -10,7 +10,22 @@
     by Brian Puthuff
 */
 
-enum { red, red_yellow, yellow, yellow_green, green, green_cyan, cyan, cyan_blue, blue, blue_magenta, magenta, magenta_red, mystery };
+enum
+{
+    red,
+    red_yellow,
+    yellow,
+    yellow_green,
+    green,
+    green_cyan,
+    cyan,
+    cyan_blue,
+    blue,
+    blue_magenta,
+    magenta,
+    magenta_red,
+    mystery
+};
 
 // HSV color structure
 struct HSV
@@ -27,6 +42,8 @@ HSV getHSV(Uint8 r, Uint8 g, Uint8 b);
 
 // check if H value is within fixed palette range
 int dropHueRange(int hue);
+
+// calculate delta difference between points
 int getDeltaXY(const SDL_Point* pixel_pair, const SDL_Point* opt1_pair, const SDL_Point* opt2_pair);
 
 // check if H value is within fixed palette range
@@ -124,9 +141,12 @@ int main(int argc, char** argv)
             { // enough saturation to determine color
                 int selected_index = 0;
                 int drop = dropHueRange(pixel_HSV.H);
+
+                // for delta compare for neighboring range
                 SDL_Point c;
                 SDL_Point o1;
                 SDL_Point o2;
+
                 switch(drop)
                 {
                     case red:
@@ -219,6 +239,7 @@ int main(int argc, char** argv)
                         break;
                 }
 
+                // determine brightness based on value
                 HSV selected_HSV = getHSV(colors[selected_index - 8].r, colors[selected_index - 8].g, colors[selected_index - 8].b);
                 if(pixel_HSV.V <= selected_HSV.V)
                 {
@@ -326,38 +347,3 @@ int getDeltaXY(const SDL_Point* pixel_pair, const SDL_Point* opt1_pair, const SD
         return 0;
     return 1;
 }
-/*
-bool isWithinArcBounds(int hue, int index)
-{
-    switch(index)
-    {
-        case 0x9: // RED < 60 and  >
-                if(hue < 45 || hue >= 315)
-                    return true;
-            break;
-        case 0xa: // GREEN
-                if(hue >=75 && hue < 165)
-                    return true;
-            break;
-        case 0xb: // YELLOW
-                if(hue >= 45 && hue < 75)
-                    return true;
-            break;
-        case 0xc: // BLUE
-                if(hue >= 195 && hue < 285)
-                    return true;
-            break;
-        case 0xd: // MAGENTA
-                if(hue >= 285 && hue < 315)
-                    return true;
-            break;
-        case 0xe: // CYAN
-                if(hue >= 165 && hue < 195)
-                    return true;
-            break;
-        default:
-            break;
-    }
-    return false;
-}
-*/
