@@ -125,14 +125,14 @@ int main(int argc, char** argv)
             SDL_GetRGB(pixel, optimized_surface->format, &r, &g, &b);
             HSV pixel_HSV = getHSV(r, g, b);
 
-            if(pixel_HSV.S <= .20)
+            if(pixel_HSV.S < .24)
             { // if saturation is low, determine grays
 
-                if(pixel_HSV.V >= .90)
+                if(pixel_HSV.V >= (double) colors[0x7].r / 0xFF)
                     pixel = SDL_MapRGB(optimized_surface->format, colors[0xf].r, colors[0xf].g, colors[0xf].b); // WHITE
-                else if(pixel_HSV.V >= .52)
+                else if(pixel_HSV.V >= (double) colors[0x8].r / 0xFF)
                     pixel = SDL_MapRGB(optimized_surface->format, colors[0x7].r, colors[0x7].g, colors[0x7].b); // LT GRAY
-                else if(pixel_HSV.V >= .15)
+                else if(pixel_HSV.V >= .12)
                     pixel = SDL_MapRGB(optimized_surface->format, colors[0x8].r, colors[0x8].g, colors[0x8].b); // DK GRAY
                 else
                     pixel = SDL_MapRGB(optimized_surface->format, colors[0x0].r, colors[0x0].g, colors[0x0].b); // BLACK
@@ -243,7 +243,7 @@ int main(int argc, char** argv)
                 HSV selected_HSV = getHSV(colors[selected_index - 8].r, colors[selected_index - 8].g, colors[selected_index - 8].b);
                 if(pixel_HSV.V <= selected_HSV.V)
                 {
-                    if(pixel_HSV.V < .15)
+                    if(pixel_HSV.V < .12)
                         selected_index = 0x0;
                     else
                        selected_index -= 8;
