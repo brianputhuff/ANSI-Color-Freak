@@ -46,8 +46,8 @@ int dropHueRange(int hue);
 // calculate delta difference between points
 int getDeltaXY(const SDL_Point* pixel_pair, const SDL_Point* opt1_pair, const SDL_Point* opt2_pair);
 
-// check if H value is within fixed palette range
-//bool isWithinArcBounds(int hue, int index);
+// grayscale function
+double gsLevel(const Uint8* r, const Uint8* g, const Uint8* b);
 
 /* MAIN */
 int main(int argc, char** argv)
@@ -125,9 +125,20 @@ int main(int argc, char** argv)
             SDL_GetRGB(pixel, optimized_surface->format, &r, &g, &b);
             HSV pixel_HSV = getHSV(r, g, b);
 
-            if(pixel_HSV.S < .24)
+            if(pixel_HSV.S < .20)
             { // if saturation is low, determine grays
 
+                double gs = gsLevel(&r, &g, &b);
+                if(gs < .25)
+                    pixel = SDL_MapRGB(optimized_surface->format, colors[0x0].r, colors[0x0].g, colors[0x0].b); // BLACK
+                else if(gs < .50)
+                    pixel = SDL_MapRGB(optimized_surface->format, colors[0x8].r, colors[0x8].g, colors[0x8].b); // DK GRAY
+                else if(gs < .75)
+                    pixel = SDL_MapRGB(optimized_surface->format, colors[0x7].r, colors[0x7].g, colors[0x7].b); // LT GRAY
+                else
+                    pixel = SDL_MapRGB(optimized_surface->format, colors[0xf].r, colors[0xf].g, colors[0xf].b); // WHITE
+
+                /*
                 if(pixel_HSV.V >= (double) colors[0x7].r / 0xFF)
                     pixel = SDL_MapRGB(optimized_surface->format, colors[0xf].r, colors[0xf].g, colors[0xf].b); // WHITE
                 else if(pixel_HSV.V >= (double) colors[0x8].r / 0xFF)
@@ -136,6 +147,7 @@ int main(int argc, char** argv)
                     pixel = SDL_MapRGB(optimized_surface->format, colors[0x8].r, colors[0x8].g, colors[0x8].b); // DK GRAY
                 else
                     pixel = SDL_MapRGB(optimized_surface->format, colors[0x0].r, colors[0x0].g, colors[0x0].b); // BLACK
+                */
             }
             else
             { // enough saturation to determine color
@@ -230,24 +242,30 @@ int main(int argc, char** argv)
                         if(getDeltaXY(&c, &o1, &o2) == 0)
                             selected_index = 0xd; // MAGENTA
                         else
-                            selected_index = 0x9; // RED
+                            selected_index = 0x0; // RED
                         break;
 
                     case mystery:
                     default:
-                        selected_index = 0x0; // BLACK
+                        selected_index = 0x9; // BLACK
                         break;
                 }
 
                 // determine brightness based on value
-                HSV selected_HSV = getHSV(colors[selected_index - 8].r, colors[selected_index - 8].g, colors[selected_index - 8].b);
-                if(pixel_HSV.V <= selected_HSV.V)
+                HSV br_selected_HSV = getHSV(colors[selected_index].r, colors[selected_index].g, colors[selected_index].b);
+                HSV dk_selected_HSV = getHSV(colors[selected_index - 8].r, colors[selected_index - 8].g, colors[selected_index - 8].b);
+
+                double cutoff = (br_selected_HSV.V - dk_selected_HSV.V) / 2;
+                cutoff = br_selected_HSV.V - cutoff;
+                if(pixel_HSV.V < cutoff)
                 {
-                    if(pixel_HSV.V < .12)
+                    cutoff = dk_selected_HSV.V / 4;
+                    if(pixel_HSV.V < cutoff)
                         selected_index = 0x0;
                     else
-                       selected_index -= 8;
+                        selected_index -= 8;
                 }
+
                 pixel = SDL_MapRGB(optimized_surface->format, colors[selected_index].r, colors[selected_index].g, colors[selected_index].b);
             }
             // repaint pixel
@@ -346,4 +364,12 @@ int getDeltaXY(const SDL_Point* pixel_pair, const SDL_Point* opt1_pair, const SD
     if(delta_1 < delta_2)
         return 0;
     return 1;
+}
+
+double gsLevel(const Uint8* r, const Uint8* g, const Uint8* b)
+{
+    double dr = (double) (*r) / 255;
+    double dg = (double) (*g) / 255;
+    double db = (double) (*b) / 255;
+    return ((0.2126 * dr) + (0.7152 * dg) + (0.0722 * db));
 }
