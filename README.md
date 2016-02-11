@@ -9,6 +9,8 @@ The program currently opens a small sample view window but functionality for thi
 
 ## TO-DO:
 * Either remove sample display window, or scale sample to fit.
+* Add basic dither from dark hue to black, and bright hugh to dark hue.
+* Add basic dither between grayscale.
 * For images with 80 pixel width or less, generate an ANSI escape code version that can be viewed in terminal.
 * Provide a makefile.
 
