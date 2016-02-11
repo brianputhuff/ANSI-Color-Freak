@@ -14,4 +14,11 @@ The program currently opens a small sample view window but functionality for thi
 * For images with 80 pixel width or less, generate an ANSI escape code version that can be viewed in terminal.
 * Provide a makefile.
 
+## SAMPLE
+*Note:* The .BMP image used as source input and the resulting output image have been converted to .PNG for the purposes of this README.
+
+![input image](./mm_input.png "Input")
+
+![output image](./mm_output.png "Output")
+
 Please note that this program requires [SDL](http://libsdl.org) framework to compile.
