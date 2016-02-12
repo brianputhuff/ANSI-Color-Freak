@@ -9,10 +9,12 @@ The program currently opens a small sample view window but functionality for thi
 
 ## TO-DO:
 * Either remove sample display window, or scale sample to fit.
-* Add basic dither from dark hue to black, and bright hugh to dark hue.
-* Add basic dither between grayscale.
 * For images with 80 pixel width or less, generate an ANSI escape code version that can be viewed in terminal.
 * Provide a makefile.
+* Consider making dither feature an option (command line argument).
+
+## UPDATED:
+* *2016.02.11*- Added simple dither class and employed on grayscale and color ranges. Works well for colorful images. Not so much for images with reduced palettes to begin with. See sample image update.
 
 ## SAMPLE
 *Note:* The .BMP image used as source input and the resulting output image have been converted to .PNG for the purposes of this README.

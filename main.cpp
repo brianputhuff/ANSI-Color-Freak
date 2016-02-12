@@ -4,6 +4,7 @@
 #include <iomanip>
 #include <string>
 #include "SDL2/SDL.h"
+#include "dither_pattern.h"
 
 /*
     ANSI COLOR FREAK
@@ -113,6 +114,12 @@ int main(int argc, char** argv)
     Uint32 pixel;
     Uint8 r, g, b;
 
+    // initialize dither pattern
+    DitherPattern dp;
+
+    // grayscale level
+    double gs;
+
     // main loop
     for(int row = 0; row < optimized_surface->h; row++)
     {
@@ -124,33 +131,56 @@ int main(int argc, char** argv)
             // get pixel HSV
             SDL_GetRGB(pixel, optimized_surface->format, &r, &g, &b);
             HSV pixel_HSV = getHSV(r, g, b);
+            gs = gsLevel(&r, &g, &b);
 
             if(pixel_HSV.S < .20)
-            { // if saturation is low, determine grays
-
-                double gs = gsLevel(&r, &g, &b);
-                if(gs < .25)
+            {
+                // if saturation is low, determine grays
+                if(gs < .14)
+                {
                     pixel = SDL_MapRGB(optimized_surface->format, colors[0x0].r, colors[0x0].g, colors[0x0].b); // BLACK
-                else if(gs < .50)
+                    dp.getBit();
+                }
+                else if(gs < .29)
+                {
+                    if(dp.getBit() == true)
+                        pixel = SDL_MapRGB(optimized_surface->format, colors[0x8].r, colors[0x8].g, colors[0x8].b); // DK GRAY
+                    else
+                        pixel = SDL_MapRGB(optimized_surface->format, colors[0x0].r, colors[0x0].g, colors[0x0].b); // BLACK
+                }
+                else if(gs < .43)
+                {
                     pixel = SDL_MapRGB(optimized_surface->format, colors[0x8].r, colors[0x8].g, colors[0x8].b); // DK GRAY
-                else if(gs < .75)
+                    dp.getBit();
+                }
+                else if(gs < .57)
+                {
+                    if(dp.getBit() == true)
+                        pixel = SDL_MapRGB(optimized_surface->format, colors[0x7].r, colors[0x7].g, colors[0x7].b); // LT GRAY
+                    else
+                        pixel = SDL_MapRGB(optimized_surface->format, colors[0x8].r, colors[0x8].g, colors[0x8].b); // DK GRAY
+                }
+                else if(gs < .71)
+                {
                     pixel = SDL_MapRGB(optimized_surface->format, colors[0x7].r, colors[0x7].g, colors[0x7].b); // LT GRAY
+                    dp.getBit();
+                }
+                else if(gs < .86)
+                {
+                    if(dp.getBit() == true)
+                        pixel = SDL_MapRGB(optimized_surface->format, colors[0xf].r, colors[0xf].g, colors[0xf].b); // WHITE
+                    else
+                        pixel = SDL_MapRGB(optimized_surface->format, colors[0x7].r, colors[0x7].g, colors[0x7].b); // LT GRAY
+                }
                 else
+                {
                     pixel = SDL_MapRGB(optimized_surface->format, colors[0xf].r, colors[0xf].g, colors[0xf].b); // WHITE
-
-                /*
-                if(pixel_HSV.V >= (double) colors[0x7].r / 0xFF)
-                    pixel = SDL_MapRGB(optimized_surface->format, colors[0xf].r, colors[0xf].g, colors[0xf].b); // WHITE
-                else if(pixel_HSV.V >= (double) colors[0x8].r / 0xFF)
-                    pixel = SDL_MapRGB(optimized_surface->format, colors[0x7].r, colors[0x7].g, colors[0x7].b); // LT GRAY
-                else if(pixel_HSV.V >= .12)
-                    pixel = SDL_MapRGB(optimized_surface->format, colors[0x8].r, colors[0x8].g, colors[0x8].b); // DK GRAY
-                else
-                    pixel = SDL_MapRGB(optimized_surface->format, colors[0x0].r, colors[0x0].g, colors[0x0].b); // BLACK
-                */
+                    dp.getBit();
+                }
             }
             else
-            { // enough saturation to determine color
+            {
+                // enough saturation to determine color
                 int selected_index = 0;
                 int drop = dropHueRange(pixel_HSV.H);
 
@@ -251,26 +281,40 @@ int main(int argc, char** argv)
                         break;
                 }
 
-                // determine brightness based on value
-                HSV br_selected_HSV = getHSV(colors[selected_index].r, colors[selected_index].g, colors[selected_index].b);
-                HSV dk_selected_HSV = getHSV(colors[selected_index - 8].r, colors[selected_index - 8].g, colors[selected_index - 8].b);
+                //dp.getBit();
 
-                double cutoff = (br_selected_HSV.V - dk_selected_HSV.V) / 2;
-                cutoff = br_selected_HSV.V - cutoff;
-                if(pixel_HSV.V < cutoff)
+                if(gs < .20)
                 {
-                    cutoff = dk_selected_HSV.V / 4;
-                    if(pixel_HSV.V < cutoff)
-                        selected_index = 0x0;
+                    selected_index = 0x0;
+                    dp.getBit();
+                }
+                else if(gs < .40)
+                {
+                    if(dp.getBit() == true)
+                        selected_index -= 8;
                     else
+                        selected_index = 0x0;
+                }
+                else if(gs < .60)
+                {
+                    selected_index -= 8;
+                    dp.getBit();
+                }
+                else if(gs < .80)
+                {
+                    if(dp.getBit() == false)
                         selected_index -= 8;
                 }
+                else
+                    dp.getBit();
 
                 pixel = SDL_MapRGB(optimized_surface->format, colors[selected_index].r, colors[selected_index].g, colors[selected_index].b);
             }
+
             // repaint pixel
             pixels[row * optimized_surface->w + col] = pixel;
         }
+        dp.nextRow();
     }
 
     // render sample image to window
